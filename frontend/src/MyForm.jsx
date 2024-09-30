@@ -6,11 +6,80 @@ function MyForm() {
     const [firstName, setFirstName] = useState("")
     const [lastName, setLastName] = useState("")
     const [age, setAge] = useState("")
+    const [formStatus, setFormStatus] = useState("typing")
+
+
+    // Validate first name and last name
+    function checkTextInput(inputValue) {
+        if (inputValue === "" || inputValue.length > 30) {
+            return false
+        } else {
+            for (let i = 0; i < inputValue.length; i++) {
+                let char = inputValue[i].toLowerCase()
+
+                let charCode = char.charCodeAt(0)
+                
+                if (charCode < 97 || charCode > 122) {
+                    return false
+                }
+            }
+        }
+
+        return true
+    }
 
     function handleSubmitForm(e) {
         e.preventDefault()
 
-        console.log(firstName, lastName, age)
+        const errorMsg = document.querySelector(".error-msg")
+
+        let isValidFirstName = checkTextInput(firstName)
+        let isValidLastName = checkTextInput(lastName)
+        let isValidAge = age != ""
+
+        if (isValidFirstName && isValidLastName && isValidAge) {
+            setFormStatus("sending")
+
+            async function addUser() {
+                const data = {
+                    firstName,
+                    lastName,
+                    age
+                }
+
+                const url = "http://127.0.0.1:5000/add_user"
+
+                const options = {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(data)
+                }
+
+                const response = await fetch(url, options)
+            }
+
+            addUser()
+            
+            setTimeout(() => {
+                setFormStatus("typing")
+                setFirstName("")
+                setLastName("")
+                setAge("")
+            }, 3000)
+        } else {
+            setFormStatus("error")
+            console.log(formStatus)
+
+            errorMsg.classList.remove("disabled")
+            errorMsg.classList.add("enabled")
+
+            setTimeout(() => {
+                errorMsg.classList.remove("enabled")
+                errorMsg.classList.add("disabled")
+            }, 5000)
+        }
     }
 
     useEffect(() => {
@@ -35,6 +104,9 @@ function MyForm() {
 
     return (
         <>
+            <div className="error-msg disabled">
+                <p>Please ensure all fields all filled out correctly.</p>
+            </div>
             <div className='container'>
                 <form
                 onSubmit={e => handleSubmitForm(e)}
@@ -48,7 +120,7 @@ function MyForm() {
                             type="text" 
                             id='firstName' 
                             value={firstName}
-                            onChange={e => setFirstName(e.target.value)}
+                            onChange={e => {setFirstName(e.target.value)}}
                             />
                         </div>
                     </div>
@@ -61,7 +133,7 @@ function MyForm() {
                             type="text" 
                             id='lastName' 
                             value={lastName}
-                            onChange={e => setLastName(e.target.value)}
+                            onChange={e => {setLastName(e.target.value)}}
                             />
                         </div>
                     </div>
@@ -74,15 +146,24 @@ function MyForm() {
                             className="ageInput" 
                             id="age"
                             value={age}
-                            onChange={e => setAge(e.target.value)}
+                            onChange={e => {setAge(e.target.value)}}
                             >
                             </select>
                         </div>
                     </div>
                     <div className="form-row submit">
-                        <input type="submit" value="Submit" />
+                        <input 
+                        type="submit"
+                        value="Submit" 
+                        disabled={
+                            firstName == "" || lastName == "" || age === "" || formStatus === 'sending' ? true : false
+                        }
+                        />
                     </div>
                 </form>
+                {formStatus === 'sending' && <div className='sending-msg'>
+                    <p>Sending...</p>
+                </div>}
             </div>
         </>
     )
